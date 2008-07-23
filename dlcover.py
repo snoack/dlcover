@@ -26,9 +26,9 @@ IMAGE_MIME_TYPES = (
 	'image/bmp',
 )
 
-def memoize(func, cache):
+def memoize(func, cache, key=lambda x: x[:]):
     def wrapper(*args):
-        mem_args = args[:]
+        mem_args = key(args)
         if mem_args in cache:
             return cache[mem_args]
         result = func(*args)
@@ -36,12 +36,18 @@ def memoize(func, cache):
         return result
     return wraps(func)(wrapper)
 
-@partial(memoize, cache={})
-def get_ASIN(artist, album):
+@partial(memoize, cache={}, key=lambda x: [isinstance(y, basestring) ? y.lower() : y for y in x])
+def get_mb_for_artist(artist):
 	mb = musicbrainz.mb()
 	mb.SetDepth(4)
-
 	mb.QueryWithArgs(MBQ_FindArtistByName, [artist])
+	return mb
+
+@partial(memoize, cache={}, key=lambda x: [isinstance(y, basestring) ? y.lower() : y for y in x]))
+def get_ASIN(artist, album):
+	mb = get_mb_for_artist(artist)
+	mb.Select(MBS_Rewind)
+
 	for idx_artist in xrange(1, mb.GetResultInt(MBE_GetNumArtists) + 1):
 		mb.Select1(MBS_SelectArtist, idx_artist)
 		for idx_album in xrange(1, mb.GetResultInt(MBE_GetNumAlbums) + 1):
