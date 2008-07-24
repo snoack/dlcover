@@ -4,6 +4,7 @@
 #
 
 import os
+import re
 from optparse import OptionParser
 from functools import wraps, partial
 import urllib2
@@ -36,14 +37,21 @@ def memoize(func, cache, key=lambda x: x[:]):
         return result
     return wraps(func)(wrapper)
 
-@partial(memoize, cache={}, key=lambda x: [isinstance(y, basestring) ? y.lower() : y for y in x])
+def normalize(obj):
+	if isinstance(obj, basestring):
+		return re.sub(r'[^a-z0-9]', '', obj.lower())
+	if isinstance(obj, (list, tuple)):
+		return obj.__class__(normalize(x) for x in obj)
+	return obj
+
+@partial(memoize, cache={}, key=normalize)
 def get_mb_for_artist(artist):
 	mb = musicbrainz.mb()
 	mb.SetDepth(4)
 	mb.QueryWithArgs(MBQ_FindArtistByName, [artist])
 	return mb
 
-@partial(memoize, cache={}, key=lambda x: [isinstance(y, basestring) ? y.lower() : y for y in x]))
+@partial(memoize, cache={}, key=normalize)
 def get_ASIN(artist, album):
 	mb = get_mb_for_artist(artist)
 	mb.Select(MBS_Rewind)
@@ -52,7 +60,7 @@ def get_ASIN(artist, album):
 		mb.Select1(MBS_SelectArtist, idx_artist)
 		for idx_album in xrange(1, mb.GetResultInt(MBE_GetNumAlbums) + 1):
 			mb.Select1(MBS_SelectAlbum, idx_album)
-			if mb.GetResultData(MBE_AlbumGetAlbumName).lower() == album.lower():
+			if normalize(mb.GetResultData(MBE_AlbumGetAlbumName)) == normalize(album):
 				try:
 					return mb.GetResultData(MBE_AlbumGetAmazonAsin)
 				except musicbrainz.MusicBrainzError:
