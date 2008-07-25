@@ -13,8 +13,6 @@
 # for more details.
 #
 
-from optparse import OptionParser
-
 import os
 import re
 from optparse import OptionParser
