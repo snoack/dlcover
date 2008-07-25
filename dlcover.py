@@ -64,7 +64,7 @@ def get_ASIN(artist, album):
 				try:
 					return mb.GetResultData(MBE_AlbumGetAmazonAsin)
 				except musicbrainz.MusicBrainzError:
-					return None
+					pass
 			mb.Select(MBS_Back)
 		mb.Select(MBS_Back)
 
